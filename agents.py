@@ -10,6 +10,7 @@ from langchain.agents.output_parsers.openai_tools import (
     OpenAIToolsAgentOutputParser,
 )
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
@@ -64,6 +65,16 @@ def calculator(text: str) -> str:
 
     return cost.content
 
+@tool
+def online_checker(text: str) -> str:
+    """Checks on the web weather the price for an item is supposed to be in a reasonable range"""
+
+    search_engine = DuckDuckGoSearchRun()
+
+    result = search_engine.run(text)
+
+    return result
+
 
 if __name__ == "__main__":
     load_dotenv(find_dotenv())
@@ -83,7 +94,7 @@ if __name__ == "__main__":
     )
     print(costs)
 
-    tools = [damage_detector, calculator]
+    tools = [damage_detector, calculator, online_checker]
 
     llm = ChatOpenAI(model_name="gpt-4", openai_api_key=api_key, temperature=0)
 
