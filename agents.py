@@ -15,59 +15,62 @@ from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from pyprojroot import here
 
+
+@tool
+def damage_detector(text: str) -> str:
+    """Returns a summary of the damaged items"""
+
+    template = (
+        "text: {text} \n\n Instruction: Erstelle eine Liste aller "
+        "beschädigten Objekte. Gib, falls vorhanden, die Höhe des "
+        "Schadens für jeden Gegenstand an."
+    )
+    prompt = PromptTemplate(
+        input_variables=["text"],
+        template=template,
+    )
+
+    summary_chain = prompt | ChatOpenAI(
+        openai_api_key=api_key,
+        temperature=0,
+        model_name="gpt-4",
+    )
+
+    summary = summary_chain.invoke({"text": text})
+
+    return summary.content
+
+
+@tool
+def calculator(text: str) -> str:
+    """Returns the total cost of the damaged items"""
+
+    template = (
+        "text: {text} \n\n Instruction: Berechne die Gesamtkosten "
+        "der beschädigten Objekte."
+    )
+    prompt = PromptTemplate(
+        input_variables=["text"],
+        template=template,
+    )
+
+    calculator_chain = prompt | ChatOpenAI(
+        openai_api_key=api_key,
+        temperature=0,
+        model_name="gpt-4",
+    )
+
+    cost = calculator_chain.invoke({"text": text})
+
+    return cost.content
+
+
 if __name__ == "__main__":
     load_dotenv(find_dotenv())
     api_key = os.getenv("OPENAI_API_KEY")
 
     data = PyPDFLoader(str(here("./schadenmeldung.pdf"))).load()
     print(data)
-
-    @tool
-    def damage_detector(text: str) -> str:
-        """Returns a summary of the damaged items"""
-
-        template = (
-            "text: {text} \n\n Instruction: Erstelle eine Liste aller "
-            "beschädigten Objekte. Gib, falls vorhanden, die Höhe des "
-            "Schadens für jeden Gegenstand an."
-        )
-        prompt = PromptTemplate(
-            input_variables=["text"],
-            template=template,
-        )
-
-        summary_chain = prompt | ChatOpenAI(
-            openai_api_key=api_key,
-            temperature=0,
-            model_name="gpt-4",
-        )
-
-        summary = summary_chain.invoke({"text": text})
-
-        return summary.content
-
-    @tool
-    def calculator(text: str) -> str:
-        """Returns the total cost of the damaged items"""
-
-        template = (
-            "text: {text} \n\n Instruction: Berechne die Gesamtkosten "
-            "der beschädigten Objekte."
-        )
-        prompt = PromptTemplate(
-            input_variables=["text"],
-            template=template,
-        )
-
-        calculator_chain = prompt | ChatOpenAI(
-            openai_api_key=api_key,
-            temperature=0,
-            model_name="gpt-4",
-        )
-
-        cost = calculator_chain.invoke({"text": text})
-
-        return cost.content
 
     print(
         "-------------------------------------------------------------------"
