@@ -65,6 +65,7 @@ def calculator(text: str) -> str:
 
     return cost.content
 
+
 @tool
 def online_checker(text: str) -> str:
     """Checks on the web weather the price for an item is supposed to be in a reasonable range"""
