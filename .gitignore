@@ -4,3 +4,5 @@
 .DS_Store
 index.faiss
 index.pkl
+.ipynb_checkpoints
+.vscode

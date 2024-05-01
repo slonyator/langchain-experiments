@@ -16,6 +16,9 @@ pyprojroot = "^0.3.0"
 pypdf = "^4.0.2"
 chromadb = "^0.4.23"
 faiss-cpu = "^1.7.4"
+pylint = "^3.1.0"
+duckduckgo-search = "^5.3.0"
+nbqa = "^1.8.5"
 
 
 [build-system]
