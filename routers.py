@@ -9,14 +9,15 @@ import os
 from typing import Literal
 
 from dotenv import find_dotenv, load_dotenv
+from langchain_community.chat_models import ChatOllama
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableBranch
-from langchain_openai import ChatOpenAI
 from loguru import logger
 from pydantic import BaseModel, Field
 from pyprojroot import here
+from langchain_experimental.llms.ollama_functions import OllamaFunctions
 
 
 class ChainNavigator(BaseModel):
@@ -47,9 +48,7 @@ class StormCauseInspector(BaseModel):
 if __name__ == "__main__":
     _ = load_dotenv(find_dotenv())
     api_key = os.getenv("OPENAI_API_KEY")
-    llm = ChatOpenAI(
-        model_name="gpt-3.5-turbo", openai_api_key=api_key, temperature=0
-    )
+    llm = OllamaFunctions(model="llama3", temperature=0,)
 
     navigator_llm = llm.with_structured_output(ChainNavigator)
 
@@ -76,10 +75,10 @@ if __name__ == "__main__":
     logger.info(response.get("claim_type"))
 
     classification_chain = (
-        prompt
-        | navigator_llm
-        | RunnableLambda(lambda x: x["claim_type"])
-        | StrOutputParser()
+            prompt
+            | navigator_llm
+            | RunnableLambda(lambda x: x["claim_type"])
+            | StrOutputParser()
     )
 
     logger.info(
@@ -100,9 +99,9 @@ if __name__ == "__main__":
     )
 
     complete_chain = {
-        "claim_type": classification_chain,
-        "document": lambda x: x["document"],
-    } | branch
+                         "claim_type": classification_chain,
+                         "document": lambda x: x["document"],
+                     } | branch
 
     logger.info(complete_chain.invoke({"document": data[0].page_content}))
     logger.info(
