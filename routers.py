@@ -96,7 +96,7 @@ if __name__ == "__main__":
             | RunnableLambda(lambda x: x["cause"])
             | StrOutputParser(),
         ),
-        prompt | llm | StrOutputParser(),
+        RunnableLambda(lambda _: "default-value"),
     )
 
     complete_chain = {
