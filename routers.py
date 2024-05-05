@@ -9,6 +9,7 @@ import os
 from typing import Literal
 
 from dotenv import find_dotenv, load_dotenv
+from langchain.chains.sequential import SequentialChain
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -75,39 +76,39 @@ if __name__ == "__main__":
     logger.info("Simple Chain successfully invoked.")
     logger.info(response.get("claim_type"))
 
-    classification_chain = (
+    type_chain = (
         prompt
         | navigator_llm
         | RunnableLambda(lambda x: x["claim_type"])
         | StrOutputParser()
     )
 
-    logger.info(
-        classification_chain.invoke({"document": data[0].page_content})
-    )
+    logger.info(type_chain.invoke({"document": data[0].page_content}))
     logger.info("Chain with RunnableLambda successfully invoked.")
 
-    # Testing the StormCauseInspector
+    storm_inspector_llm = llm.with_structured_output(StormCauseInspector)
+
+    storm_cause_chain = (
+        prompt
+        | storm_inspector_llm
+        | RunnableLambda(lambda x: x["cause"])
+        | StrOutputParser()
+    )
+
     branch = RunnableBranch(
         (
             lambda x: "storm" in x["claim_type"],
-            prompt
-            | llm.with_structured_output(StormCauseInspector)
-            | RunnableLambda(lambda x: x["cause"])
-            | StrOutputParser(),
+            storm_cause_chain,
         ),
         RunnableLambda(lambda _: "default-value"),
     )
 
-    complete_chain = {
-        "claim_type": classification_chain,
-        "document": lambda x: x["document"],
-    } | branch
+    complete_chain = SequentialChain(
+        chains=[type_chain, branch],
+        input_variables=["document"],
+        output_variables=["claim_type", "cause"],
+        verbose=True,
+    )
 
-    logger.info(complete_chain.invoke({"document": data[0].page_content}))
-    logger.info(
-        classification_chain.invoke({"document": data[0].page_content})
-    )
-    logger.info(
-        "Chain with RunnableLambda and RunnableBranch successfully invoked."
-    )
+    final_respone = complete_chain.invoke({"document": data[0].page_content})
+    logger.info(final_respone)
