@@ -14,6 +14,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableLambda, RunnableBranch
 from langchain_openai import ChatOpenAI
+from loguru import logger
 from pydantic import BaseModel, Field
 from pyprojroot import here
 
@@ -68,13 +69,12 @@ if __name__ == "__main__":
     navigator = prompt | navigator_llm
 
     data = PyPDFLoader(str(here("./schadenmeldung.pdf"))).load()
-    print(data)
+    logger.info(data)
 
-    # Testing the navigotor
     response = navigator.invoke({"document": data[0].page_content})
-    print(response.get("claim_type"))
+    logger.info("Simple Chain successfully invoked.")
+    logger.info(response.get("claim_type"))
 
-    # Embedding the navigator in a real chain
     classification_chain = (
         prompt
         | navigator_llm
@@ -82,7 +82,10 @@ if __name__ == "__main__":
         | StrOutputParser()
     )
 
-    print(classification_chain.invoke({"document": data[0].page_content}))
+    logger.info(
+        classification_chain.invoke({"document": data[0].page_content})
+    )
+    logger.info("Chain with RunnableLambda successfully invoked.")
 
     # Testing the StormCauseInspector
     branch = RunnableBranch(
@@ -101,4 +104,10 @@ if __name__ == "__main__":
         "document": lambda x: x["document"],
     } | branch
 
-    print(complete_chain.invoke({"document": data[0].page_content}))
+    logger.info(complete_chain.invoke({"document": data[0].page_content}))
+    logger.info(
+        classification_chain.invoke({"document": data[0].page_content})
+    )
+    logger.info(
+        "Chain with RunnableLambda and RunnableBranch successfully invoked."
+    )
