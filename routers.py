@@ -9,11 +9,13 @@ import os
 from typing import Literal
 
 from dotenv import find_dotenv, load_dotenv
-from langchain.chains.sequential import SequentialChain
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnableBranch
+from langchain_core.runnables import (
+    RunnableLambda,
+    RunnableBranch,
+)
 from langchain_openai import ChatOpenAI
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -103,12 +105,23 @@ if __name__ == "__main__":
         RunnableLambda(lambda _: "default-value"),
     )
 
-    complete_chain = SequentialChain(
-        chains=[type_chain, branch],
-        input_variables=["document"],
-        output_variables=["claim_type", "cause"],
-        verbose=True,
-    )
+    complete_chain = {
+        "claim_type": type_chain,
+        "document": lambda x: x["document"],
+    } | branch
 
     final_respone = complete_chain.invoke({"document": data[0].page_content})
     logger.info(final_respone)
+
+    logger.info("Rounting with functional approach")
+
+    def route(info):
+        if "storm" in info["document"]:
+            return storm_cause_chain
+        else:
+            return "default-value"
+
+    sequential_chain = (
+        {"document": type_chain} | RunnableLambda(route) | StrOutputParser()
+    )
+    logger.info(sequential_chain.invoke({"document": data[0].page_content}))
