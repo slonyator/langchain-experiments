@@ -14,7 +14,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import (
     RunnableLambda,
-    RunnableBranch,
+    RunnableBranch, RunnablePassthrough,
 )
 from langchain_openai import ChatOpenAI
 from loguru import logger
@@ -125,3 +125,15 @@ if __name__ == "__main__":
         {"document": type_chain} | RunnableLambda(route) | StrOutputParser()
     )
     logger.info(sequential_chain.invoke({"document": data[0].page_content}))
+
+    def routing(info):
+        if "storm" in info["document"]:
+            return RunnablePassthrough.assign(cause=storm_cause_chain)
+        else:
+            return "default-value"
+
+
+    logger.info("Functional Routing with intermediate results")
+    seq_chain = {"document": type_chain} | RunnableLambda(routing)
+
+    logger.info(seq_chain.invoke({"document": data[0].page_content}))
