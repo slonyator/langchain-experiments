@@ -136,4 +136,6 @@ if __name__ == "__main__":
     logger.info("Functional Routing with intermediate results")
     seq_chain = {"document": type_chain} | RunnableLambda(routing)
 
-    logger.info(seq_chain.invoke({"document": data[0].page_content}))
+    structured_response = seq_chain.invoke({"document": data[0].page_content})
+    logger.info(type(structured_response))
+    logger.info(structured_response)
