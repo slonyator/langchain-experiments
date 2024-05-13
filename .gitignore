@@ -6,3 +6,4 @@ index.faiss
 index.pkl
 .ipynb_checkpoints
 .vscode
+__pycache__
