@@ -47,6 +47,15 @@ class StormCauseInspector(BaseModel):
         description="The description of the storm damage.",
     )
 
+class Router:
+
+    @staticmethod
+    def final_result_only(info):
+        if "storm" in info["document"]:
+            return storm_cause_chain
+        else:
+            return "default-value"
+
 
 if __name__ == "__main__":
     _ = load_dotenv(find_dotenv())
@@ -116,14 +125,8 @@ if __name__ == "__main__":
 
     logger.info("Rounting with functional approach")
 
-    def route(info):
-        if "storm" in info["document"]:
-            return storm_cause_chain
-        else:
-            return "default-value"
-
     sequential_chain = (
-        {"document": type_chain} | RunnableLambda(route) | StrOutputParser()
+            {"document": type_chain} | RunnableLambda(Router.final_result_only) | StrOutputParser()
     )
     logger.info(sequential_chain.invoke({"document": data[0].page_content}))
 
