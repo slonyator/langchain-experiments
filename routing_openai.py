@@ -56,6 +56,13 @@ class Router:
         else:
             return "default-value"
 
+    @staticmethod
+    def includes_intermediate_resuls(info):
+        if "storm" in info["document"]:
+            return RunnablePassthrough.assign(cause=storm_cause_chain)
+        else:
+            return "default-value"
+
 
 if __name__ == "__main__":
     _ = load_dotenv(find_dotenv())
@@ -130,14 +137,8 @@ if __name__ == "__main__":
     )
     logger.info(sequential_chain.invoke({"document": data[0].page_content}))
 
-    def routing(info):
-        if "storm" in info["document"]:
-            return RunnablePassthrough.assign(cause=storm_cause_chain)
-        else:
-            return "default-value"
-
     logger.info("Functional Routing with intermediate results")
-    seq_chain = {"document": type_chain} | RunnableLambda(routing)
+    seq_chain = {"document": type_chain} | RunnableLambda(Router.includes_intermediate_resuls)
 
     structured_response = seq_chain.invoke({"document": data[0].page_content})
     logger.info(type(structured_response))
