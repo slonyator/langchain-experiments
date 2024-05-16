@@ -82,9 +82,14 @@ if __name__ == "__main__":
         type_chain = (
                 chat_prompt
                 | ollama_structured_model
+                | RunnableLambda(lambda x: x.dict())
                 | RunnableLambda(lambda x: x["claim_type"])
                 | StrOutputParser()
         )
+        logger.info("Type chain setup")
+        _type = type_chain.invoke({"document": data[0].page_content})
+        logger.info(_type)
+        logger.success("Chain with RunnableLambda invoked.")
 
         storm_inspector_llm = llm.with_structured_output(StormCauseInspector)
         logger.info("Storm inspector Model setup successfully")
@@ -92,6 +97,7 @@ if __name__ == "__main__":
         storm_cause_chain = (
                 chat_prompt
                 | storm_inspector_llm
+                | RunnableLambda(lambda x: x.dict())
                 | RunnableLambda(lambda x: x["cause"])
                 | StrOutputParser()
         )
