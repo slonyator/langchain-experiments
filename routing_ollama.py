@@ -107,9 +107,9 @@ if __name__ == "__main__":
         logger.info("Sequential chain setup")
 
         structured_response = seq_chain.invoke({"document": data[0].page_content})
-        logger.info(structured_response)
+        logger.success(structured_response)
 
-        logger.success("Routing successfully completed")
+        logger.info("Routing successfully completed")
 
     except Exception as e:
         logger.error(e)
