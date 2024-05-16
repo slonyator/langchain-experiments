@@ -4,14 +4,11 @@ routing_ollama.py
 This module demonstrates the routing concept in LangChain using Ollama
 """
 
-import os
 from typing import Literal
 
-from dotenv import find_dotenv, load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_openai import ChatOpenAI
 from loguru import logger
 from pyprojroot import here
 
@@ -44,9 +41,6 @@ class StormCauseInspector(BaseModel):
 
 
 if __name__ == "__main__":
-    _ = load_dotenv(find_dotenv())
-    api_key = os.getenv("OPENAI_API_KEY")
-
     llm = OllamaFunctions(model="llama3", temperature=0, format="json")
 
     ollama_model = llm.with_structured_output(ChainNavigator)
@@ -75,25 +69,10 @@ if __name__ == "__main__":
         """
     )
 
-    openai_model = ChatOpenAI(
-        api_key="ollama", model="llama3", base_url="http://localhost:11434/"
-    )
-
-    OPENAI_LLM = openai_model.with_structured_output(ChainNavigator)
-
     ollama_chain = prompt | ollama_model
-    openai_chain = chat_prompt | OPENAI_LLM
 
     data = PyPDFLoader(str(here("./schadenmeldung.pdf"))).load()
     logger.info(data)
-
-    try:
-        open_ai_response = openai_chain.invoke(
-            {"document": data[0].page_content}
-        )
-        logger.info(open_ai_response)
-    except Exception as e:
-        logger.error(e)
 
     try:
         response = ollama_chain.invoke({"document": data[0].page_content})
