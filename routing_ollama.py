@@ -41,10 +41,17 @@ class StormCauseInspector(BaseModel):
         description="The description of the storm damage.",
     )
 
-
 def routing(info):
+    print(info)
+    print(type(info))
     if "storm" in info["document"]:
         return RunnablePassthrough.assign(cause=storm_cause_chain)
+    else:
+        return "default-value"
+
+def final_result_only(info):
+    if "storm" in info["document"]:
+        return storm_cause_chain
     else:
         return "default-value"
 
@@ -74,42 +81,50 @@ if __name__ == "__main__":
     data = PyPDFLoader(str(here("./schadenmeldung.pdf"))).load()
     logger.info(data)
 
-    try:
-        response = navigator_chain.invoke({"document": data[0].page_content})
-        logger.info(response)
-        logger.success("Simple navigator chain test successful")
+    response = navigator_chain.invoke({"document": data[0].page_content})
+    logger.info(response)
+    logger.success("Simple navigator chain test successful")
 
-        type_chain = (
-                chat_prompt
-                | ollama_structured_model
-                | RunnableLambda(lambda x: x.dict())
-                | RunnableLambda(lambda x: x["claim_type"])
-                | StrOutputParser()
-        )
-        logger.info("Type chain setup")
-        _type = type_chain.invoke({"document": data[0].page_content})
-        logger.info(_type)
-        logger.success("Chain with RunnableLambda invoked.")
+    type_chain = (
+            chat_prompt
+            | ollama_structured_model
+            | RunnableLambda(lambda x: x.dict())
+            | RunnableLambda(lambda x: x["claim_type"])
+            | StrOutputParser()
+    )
+    logger.info("Type chain setup")
+    _type = type_chain.invoke({"document": data[0].page_content})
+    logger.info(_type)
+    logger.success("Chain with RunnableLambda invoked.")
 
-        storm_inspector_llm = llm.with_structured_output(StormCauseInspector)
-        logger.info("Storm inspector Model setup successfully")
+    storm_inspector_llm = llm.with_structured_output(StormCauseInspector)
+    logger.info("Storm inspector Model setup successfully")
 
-        storm_cause_chain = (
-                chat_prompt
-                | storm_inspector_llm
-                | RunnableLambda(lambda x: x.dict())
-                | RunnableLambda(lambda x: x["cause"])
-                | StrOutputParser()
-        )
-        logger.info("Storm cause chain setup")
+    storm_cause_chain = (
+            chat_prompt
+            | storm_inspector_llm
+            | RunnableLambda(lambda x: x.dict())
+            | RunnableLambda(lambda x: x["cause"])
+            | StrOutputParser()
+    )
 
-        seq_chain = {"document": type_chain} | RunnableLambda(routing)
-        logger.info("Sequential chain setup")
+    logger.info("Storm cause chain setup")
+    cause = storm_cause_chain.invoke({"document": data[0].page_content})
+    logger.success("Second Chain with RunnableLambda invoked.")
 
-        structured_response = seq_chain.invoke({"document": data[0].page_content})
-        logger.success(structured_response)
+    logger.info("Routing with final results setup")
+    sequential_chain = (
+            {"document": type_chain} | RunnableLambda(final_result_only) | StrOutputParser()
+    )
 
-        logger.info("Routing successfully completed")
+    final_result = sequential_chain.invoke({"document": data[0].page_content})
+    logger.success(final_result)
 
-    except Exception as e:
-        logger.error(e)
+    logger.info("Routing with intermediate results setup")
+    seq_chain = {"document": type_chain} | RunnableLambda(routing)
+    logger.info("Sequential chain setup")
+
+    structured_response = seq_chain.invoke({"document": data[0].page_content})
+    logger.success(structured_response)
+
+    logger.info("Routing successfully completed")
