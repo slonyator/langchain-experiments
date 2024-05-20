@@ -11,10 +11,9 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
+from langchain_experimental.llms.ollama_functions import OllamaFunctions
 from loguru import logger
 from pyprojroot import here
-
-from ollama_functions import OllamaFunctions
 
 
 class ChainNavigator(BaseModel):
@@ -41,6 +40,7 @@ class StormCauseInspector(BaseModel):
         description="The description of the storm damage.",
     )
 
+
 def routing(info):
     print(info)
     print(type(info))
@@ -48,6 +48,7 @@ def routing(info):
         return RunnablePassthrough.assign(cause=storm_cause_chain)
     else:
         return "default-value"
+
 
 def final_result_only(info):
     if "storm" in info["document"]:
@@ -86,11 +87,11 @@ if __name__ == "__main__":
     logger.success("Simple navigator chain test successful")
 
     type_chain = (
-            chat_prompt
-            | ollama_structured_model
-            | RunnableLambda(lambda x: x.dict())
-            | RunnableLambda(lambda x: x["claim_type"])
-            | StrOutputParser()
+        chat_prompt
+        | ollama_structured_model
+        | RunnableLambda(lambda x: x.dict())
+        | RunnableLambda(lambda x: x["claim_type"])
+        | StrOutputParser()
     )
     logger.info("Type chain setup")
     _type = type_chain.invoke({"document": data[0].page_content})
@@ -101,11 +102,11 @@ if __name__ == "__main__":
     logger.info("Storm inspector Model setup successfully")
 
     storm_cause_chain = (
-            chat_prompt
-            | storm_inspector_llm
-            | RunnableLambda(lambda x: x.dict())
-            | RunnableLambda(lambda x: x["cause"])
-            | StrOutputParser()
+        chat_prompt
+        | storm_inspector_llm
+        | RunnableLambda(lambda x: x.dict())
+        | RunnableLambda(lambda x: x["cause"])
+        | StrOutputParser()
     )
 
     logger.info("Storm cause chain setup")
@@ -114,7 +115,9 @@ if __name__ == "__main__":
 
     logger.info("Routing with final results setup")
     sequential_chain = (
-            {"document": type_chain} | RunnableLambda(final_result_only) | StrOutputParser()
+        {"document": type_chain}
+        | RunnableLambda(final_result_only)
+        | StrOutputParser()
     )
 
     final_result = sequential_chain.invoke({"document": data[0].page_content})
